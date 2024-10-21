@@ -1,0 +1,1 @@
+# Árvore geradora mínima
