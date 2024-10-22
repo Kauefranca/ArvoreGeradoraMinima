@@ -1,117 +1,129 @@
+import random
 import heapq
-
+import time
 class Grafo:
-    def __init__(self, vertices):
-        self.v = vertices
-        self.grafo = []
+    def __init__(self, V):
+        self.V = V
+        self.edges = [] 
+        self.adj = [[] for _ in range(V)]  
 
-    def adicionar_aresta(self, u, v, peso):
-        self.grafo.append([u, v, peso])
+    
+    def add_edge(self, u, v, w):
+        self.adj[u].append((v, w))
+        self.adj[v].append((u, w))
+        self.edges.append((u, v, w))
 
-    def encontrar_conjunto(self, pai, i):
-        if pai[i] != i: pai[i] = self.encontrar_conjunto(pai, pai[i])
-        return pai[i]
+    
+    def prim_mst(self):
+        pq = []  
+        src = 0  
 
-    def unir_conjuntos(self, pai, rank, x, y):
-        if rank[x] < rank[y]: pai[x] = y
-        elif rank[x] > rank[y]: pai[y] = x
+        key = [float('inf')] * self.V
+        parent = [-1] * self.V
+        in_mst = [False] * self.V
+
+        heapq.heappush(pq, (0, src))
+        key[src] = 0
+
+        while pq:
+            u = heapq.heappop(pq)[1]
+
+            if in_mst[u]:
+                continue
+
+            in_mst[u] = True
+
+            for v, weight in self.adj[u]:
+                if not in_mst[v] and key[v] > weight:
+                    key[v] = weight
+                    heapq.heappush(pq, (key[v], v))
+                    parent[v] = u
+
+        
+        mst_cost = 0
+        for i in range(1, self.V):
+            mst_cost += key[i]
+            
+
+        print(f"Custo Prim: {mst_cost}")
+
+    
+    def find_set(self, parent, i):
+        if parent[i] != i:
+            parent[i] = self.find_set(parent, parent[i])
+        return parent[i]
+
+    def union_sets(self, parent, rank, x, y):
+        if rank[x] < rank[y]:
+            parent[x] = y
+        elif rank[x] > rank[y]:
+            parent[y] = x
         else:
-            pai[y] = x
+            parent[y] = x
             rank[x] += 1
 
-    def agm_kruskal(self):
-        resultado = []
-        pai  = []
+    
+    def kruskal_mst(self):
+        result = []
+        parent = []
         rank = []
 
-        self.grafo = sorted(self.grafo, key=lambda item: item[2])
+        self.edges = sorted(self.edges, key=lambda item: item[2])
 
-        for vertice in range(self.v):
-            pai.append(vertice)
+        for node in range(self.V):
+            parent.append(node)
             rank.append(0)
 
         e = 0
         i = 0
 
-        while e < self.v - 1:
-            u, v, peso = self.grafo[i]
+        while e < self.V - 1:
+            u, v, w = self.edges[i]
             i += 1
-            x = self.encontrar_conjunto(pai, u)
-            y = self.encontrar_conjunto(pai, v)
+            x = self.find_set(parent, u)
+            y = self.find_set(parent, v)
 
             if x != y:
                 e += 1
-                resultado.append([u, v, peso])
-                self.unir_conjuntos(pai, rank, x, y)
+                result.append((u, v, w))
+                self.union_sets(parent, rank, x, y)
 
-        return resultado
+        mst_cost = sum([w for _, _, w in result])
+        for u, v, weight in result:
+            pass
+            
 
-    def agm_prim(self):
-        pq = []  # Priority queue to store vertices that are being processed
-        src = 0  # Taking vertex 0 as the source
+        print(f"Custo Kruskal: {mst_cost}")
 
-        # Create a list for keys and initialize all keys as infinite (INF)
-        key = [float('inf')] * self.V
 
-        # To store the parent array which, in turn, stores MST
-        parent = [-1] * self.V
+if __name__ == "__main__":
+    # Mais rapido para o Kraskal
+    V = 9
+    g = Grafo(V)
+    edges = [
+        (7, 6, 1), (8, 2, 2), (6, 5, 2), (0, 1, 4), (2, 5, 4), (8, 6, 6), (2, 3, 7), (7, 8, 7), (0, 7, 8), (1, 2, 8), (3, 4, 9), (5, 4, 10), (1, 7, 11), (3, 5, 14)        
+    ]
 
-        # To keep track of vertices included in MST
-        in_mst = [False] * self.V
+    # Mais rapido para o Prim
+    # V = 10000
+    # edges = []
+    # for i in range(V):
+    #     for j in range(i + 1, V):
+    #         if random.random() < 0.1:  
+    #             weight = random.randint(1, 100)
+    #             edges.append((i, j, weight))
 
-        # Insert source itself into the priority queue and initialize its key as 0
-        heapq.heappush(pq, (0, src))
-        key[src] = 0
+    g = Grafo(V)
 
-        # Loop until the priority queue becomes empty
-        while pq:
-            # The first vertex in the pair is the minimum key vertex
-            # Extract it from the priority queue
-            # The vertex label is stored in the second of the pair
-            u = heapq.heappop(pq)[1]
+    for u, v, w in edges:
+        g.add_edge(u, v, w)
 
-            # Different key values for the same vertex may exist in the priority queue.
-            # The one with the least key value is always processed first.
-            # Therefore, ignore the rest.
-            if in_mst[u]:
-                continue
+    start_time = time.time()
+    g.prim_mst()
+    end_time = time.time()
+    print(f"Tempo de execução - Prim: {end_time - start_time:.8f} segundos")
 
-            in_mst[u] = True  # Include the vertex in MST
-
-            # Iterate through all adjacent vertices of a vertex
-            for v, weight in self.adj[u]:
-                # If v is not in MST and the weight of (u, v) is smaller than the current key of v
-                if not in_mst[v] and key[v] > weight:
-                    # Update the key of v
-                    key[v] = weight
-                    heapq.heappush(pq, (key[v], v))
-                    parent[v] = u
-
-        # Print edges of MST using the parent array
-        for i in range(1, self.V):
-            print(f"{parent[i]} - {i}")
-
-grafo = Grafo(9)
-grafo.adicionar_aresta(7, 6, 1)
-grafo.adicionar_aresta(8, 2, 2)
-grafo.adicionar_aresta(6, 5, 2)
-grafo.adicionar_aresta(0, 1, 4)
-grafo.adicionar_aresta(2, 5, 4)
-grafo.adicionar_aresta(8, 6, 6)
-grafo.adicionar_aresta(2, 3, 7)
-grafo.adicionar_aresta(7, 8, 7)
-grafo.adicionar_aresta(0, 7, 8)
-grafo.adicionar_aresta(1, 2, 8)
-grafo.adicionar_aresta(3, 4, 9)
-grafo.adicionar_aresta(5, 4, 10)
-grafo.adicionar_aresta(1, 7, 11)
-grafo.adicionar_aresta(3, 5, 14)
-
-resultadoKruskal = grafo.agm_kruskal()
-custoKruskal = 0
-
-for u, v, peso in resultadoKruskal:
-    custoKruskal += peso 
-    print("%d <-> %d = %d" % (u, v, peso))
-
-print(f'Tamanho da árvore geradora mínima (Kruskal): {custoKruskal}')
+    start_time = time.time()
+    g.kruskal_mst()
+    end_time = time.time()
+    print(f"Tempo de execução - Kruskal {end_time - start_time:.8f} segundos")
