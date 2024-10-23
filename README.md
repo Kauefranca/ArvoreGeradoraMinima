@@ -3,7 +3,5 @@
 Executando
 
 ```bash
-python kruskal.py
-ou
-python prim.py
+python main.py
 ```
